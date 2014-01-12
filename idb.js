@@ -1,3 +1,5 @@
+// some sample usecases:
+
 //  idb.migrate({
 //    1: function(m) {
 //      m('tracks').create;
@@ -13,39 +15,24 @@
 // });
 
 // idb('tracks').each(function(track) {});
-//
-//
-//
-
-idb.migrate
-  1: ->
-    idb('tracks').create
-    idb('tracks').index('name').unique
-  2: ->
-  3: ->
-
-
-library = idb.db('library')
 
 (function(base) {
 
-var idb, flag, accessor;
+var idb, flag, attribute;
 
 attribute = function(name, fn) {
-  Object.defineProperty(idb, name, {
-    get: fn
-  });
-}
+  Object.defineProperty(idb, name, {get: fn});
+};
 
 flag = function(flagName, props) {
   attribute(flagName, function() {
     return this.clone.set(props);
   });
-}
+};
 
 idb = base.idb = function() {
   return idb.onCalled.apply(idb, arguments);
-}
+};
 
 idb._connections     = {};
 idb._database        = 'idb';
@@ -65,7 +52,7 @@ flag('readwrite', {_transactionMode: 'readwrite'});
 attribute('clone', function() {
   var fn = function() {
     return idb.onCalled.apply(fn, arguments);
-  }
+  };
 
   fn.__proto__ = fn.prototype = this;
 
@@ -96,7 +83,7 @@ idb.onCalled = function(input) {
     default:
       return this;
   }
-}
+};
 
 idb.open = function(fn) {
   var req, version;
@@ -106,14 +93,14 @@ idb.open = function(fn) {
 
   req.onsuccess = function() {
     idb._databases[name] = req.result;
-  }
+  };
 
-  req.onupgradeneeded = (function(event){
+  req.onupgradeneeded = (function(event) {
     // TODO run migrations
   }).bind(idb.db(name));
 
   return this.clone;
-}
+};
 
 idb.set = function(key, value) {
   if (typeof key === 'object') {
@@ -127,11 +114,11 @@ idb.set = function(key, value) {
 
   this[key] = value;
   return this;
-}
+};
 
 idb.tap = function(fn) {
   return (fn && fn.call(this, this)) || this;
-}
+};
 
 idb.transaction = idb.atomic = function(fn) {
   this.open(function(ln) {
@@ -140,18 +127,16 @@ idb.transaction = idb.atomic = function(fn) {
     ln._transaction || (ln._transaction = db.transaction(ln._objectStore, ln._transactionMode));
   });
   return ln.tap(fn);
-}
+};
 
 idb.migrate = function(migrations) {
-  if (! Object.keys(migrations).every(function(n) {
-    return n > 0;
-  })) {
+  if (! Object.keys(migrations).every(function(n) { return n > 0; })) {
     throw new RangeError("migration keys must be positive integers");
   }
 
   this._migrations[this._database] = migrations;
   return this;
-}
+};
 
 idb.put = function(item) {
   return this.readwrite.transaction(function() {
@@ -159,19 +144,19 @@ idb.put = function(item) {
 
     req.onsuccess = function() {
       this._doneCallback && this._doneCallback(req.result);
-    }
+    };
   });
-}
+};
 
 idb.then = idb.done = function(fn) {
   return this.clone.set('_doneCallback', function() {
     fn.apply(this, this._doneCallback.apply(this, arguments));
-  }
-}
+  });
+};
 
 idb.db = function(name) {
   return this.clone.set('_database', name);
-}
+};
 
 idb.get = function(key) {
   return this.transaction(function() {
@@ -179,12 +164,12 @@ idb.get = function(key) {
 
     req.onsuccess = function() {
       this._doneCallback && this._doneCallback(req.result);
-    }
+    };
   });
-}
+};
 
 idb.from = idb.table = idb.objectStore = function(name) {
   return this.clone.set('_objectStore', name);
-}
+};
 
 })(this);
