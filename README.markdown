@@ -25,7 +25,7 @@ Here's an example:
   idb('books').put book
 
 
-  idb('albums').get('1') ->
+  idb('albums').get('1').then ->
     console.log this
 ```
 
@@ -65,20 +65,6 @@ Transactions
 ------------
 
 ```coffee
-
-
-L.songs.insert(obj)
-
-idb('items').index 'name', multiEntry: true
-idb('tracks').migrate (tracks) ->
-  tracks.index 'name'
-
-idb('tracks').each (track) ->
-  console.log track
-
-server.people.query( 'firstName' , 'Aaron' )
-
-idb('people').where firstName: 'Aaron', lastName: 'bobson'
 
 ```
 
