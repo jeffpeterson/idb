@@ -18,7 +18,25 @@
 
 (function(base) {
 
-var idb, flag, attribute;
+var idb, flag, attribute, defaultOptions, extend, setProto;
+
+setProto = function(obj, proto) {
+  obj.__proto__ = proto;
+  return obj;
+};
+
+extend = function() {
+  var obj = {};
+
+  [].forEach.call(arguments, function(extension) {
+    Object.keys(extension).forEach(function(key) {
+      if (extension.hasOwnProperty(key))
+        obj[key] = extension[key];
+    });
+  });
+
+  return obj;
+};
 
 attribute = function(name, fn) {
   Object.defineProperty(idb, name, {get: fn});
@@ -34,27 +52,29 @@ idb = base.idb = function() {
   return idb.onCalled.apply(idb, arguments);
 };
 
-idb._connections     = {};
-idb._database        = 'idb';
-idb._databases       = {};
-idb._doneCallback    = null;
-idb._factory         = function() {};
-idb._migrations      = {};
-idb._objectStore     = null;
-idb._result          = null;
-idb._transactionMode = 'readwrite';
-idb.indexedDB        = base.indexedDB;
+defaultOptions = {
+  _attributes:      Object.create(null),
+  _connections:     {},
+  _promise:         null,
+  _database:        'idb',
+  _databases:       {},
+  _migrations:      {},
+  _objectStore:     null,
+  _transactionMode: 'readwrite'
+};
 
+setProto(idb, defaultOptions);
+idb.indexedDB = base.indexedDB;
 
-flag('readonly',  {_transactionMode: 'readonly'});
-flag('readwrite', {_transactionMode: 'readwrite'});
+flag('readonly',  { _transactionMode: 'readonly'  });
+flag('readwrite', { _transactionMode: 'readwrite' });
 
 attribute('clone', function() {
   var fn = function() {
     return idb.onCalled.apply(fn, arguments);
   };
 
-  fn.__proto__ = fn.prototype = this;
+  setProto(fn, this).prototype = this;
 
   return fn;
 });
@@ -105,8 +125,8 @@ idb.open = function(fn) {
 idb.set = function(key, value) {
   if (typeof key === 'object') {
     for (var k in key) {
-      if (!key.hasOwnProperty(k)) continue;
-      this[k] = key[k];
+      if (key.hasOwnProperty(k))
+        this[k] = key[k];
     }
 
     return this;
@@ -138,20 +158,49 @@ idb.migrate = function(migrations) {
   return this;
 };
 
+idb.where = function(attributes) {
+  setProto(attributes, this._attributes);
+  this.clone.set('_attributes');
+};
+
 idb.put = function(item) {
   return this.readwrite.transaction(function() {
-    var req = this._transaction.objectStore(this._objectStore).put(item);
+    var req = this._transaction
+      .objectStore(this._objectStore)
+      .put(item);
 
     req.onsuccess = function() {
-      this._doneCallback && this._doneCallback(req.result);
-    };
+      this.resolve(req.result);
+    }.bind(this);
+
+    req.onerror = function() {
+      this.reject(req.error);
+    }.bind(this);
+
   });
 };
 
+idb.resolve = function(result) {
+  this._promise = Object.create(null);
+  this._promise.ondone(result);
+  this._promise.value = result;
+};
+
+idb.reject = function(result) {
+  // this._doneCallback(result);
+  // this._result = result;
+};
+
 idb.then = idb.done = function(fn) {
-  return this.clone.set('_doneCallback', function() {
-    fn.apply(this, this._doneCallback.apply(this, arguments));
-  });
+  if (!this._promise)
+    throw new Error("No promise yet!");
+
+  return this.clone.tap(function(ln){
+    ln._promise.doneCallback = function() {
+      fn.apply(this, this._doneCallback.apply(this, arguments));
+    }.bind(this);
+  }.bind(this));
+
 };
 
 idb.db = function(name) {

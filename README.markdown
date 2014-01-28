@@ -12,23 +12,32 @@ on the result.
 Here's an example:
 
 ```coffee
-  idb.migrate
-    1: (m) ->
-      m('songs').create.index('name')
+  idb.migrate({
+    1: function(m) {
+      m('songs').create.index('name');
+    }
+  });
 
-  idb('songs').each (song) ->
-    console.log song
+  idb('songs').each(function(song) {
+    console.log(song);
+  });
 
-  idb('songs') (songs) ->
-    console.log songs
+  idb('songs').all(function(songs) {
+    console.log(songs);
+  });
 
-  idb('books').put book
+  var book = { /* ... */ };
+  idb('books').put(book);
 
 
-  idb('albums').get('1').then ->
-    console.log this
+  idb('albums').get('1').then(function() {
+    console.log(this);
+  });
+
+  idb('albums').where({artist: "Baths", name: "Cerulean"}).first(function(album) {
+    album.name; //=> "Cerulean"
+  });
 ```
-
 
 Migrations
 ----------
