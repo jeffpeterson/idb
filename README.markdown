@@ -39,6 +39,30 @@ Here's an example:
   });
 ```
 
+Methods
+-------
+
+- `idb.db( databaseName )`
+- `idb.from( storeName )`
+- `idb.get( key )`
+- `idb.migrate( migrations )`
+- `idb.onCalled( functionOrObjectOrString )`
+- `idb.put( item )`
+- `idb.query( attributes )`
+- `idb.reject( error )`
+- `idb.resolve( result )`
+- `idb.set( properties )`
+- `idb.tap( fn )`
+- `idb.then( successCallback )`
+- `idb.transaction( fn )`
+
+- `idb.readonly`
+- `idb.readwrite`
+- `idb.create`
+- `idb.version`
+- `idb.clone`
+- `idb.close`
+
 Migrations
 ----------
 
